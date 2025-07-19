@@ -1,13 +1,13 @@
-// This file contains mock user data for authentication purposes.
-// In a real-world application, this data would be stored in a secure database
-// and passwords would be hashed using a strong algorithm like bcrypt.
+// This file is no longer used for fetching user data.
+// User data is now fetched from MongoDB.
+// You can populate your MongoDB `users` collection with this data.
 
-export const MOCK_USERS = [
+export const MOCK_USERS_TO_SEED = [
   {
     id: 'user-1',
     name: 'Admin User',
     email: 'admin@example.com',
-    password: 'password123', // Plain text for demonstration purposes only.
+    password: 'password123', // In a real app, hash this before seeding.
     role: 'admin' as const,
   },
   {

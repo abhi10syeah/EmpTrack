@@ -5,8 +5,7 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { createSession, deleteSession, getSession } from '@/lib/auth';
 import { loginSchema, employeeSchema } from '@/lib/schemas';
-import { MOCK_USERS } from '@/lib/users';
-import { createEmployee, updateEmployee, deleteEmployee as deleteEmployeeData } from '@/lib/data';
+import { createEmployee, updateEmployee, deleteEmployee as deleteEmployeeData, findUserByEmail } from '@/lib/data';
 
 // Define the shape of the state returned by server actions.
 type FormState = {
@@ -28,8 +27,8 @@ export async function loginAction(_prevState: FormState, formData: FormData): Pr
 
   const { email, password } = validatedFields.data;
 
-  // Find the user in the mock database. In a real app, you'd query a database.
-  const user = MOCK_USERS.find((u) => u.email === email);
+  // Find the user in the database.
+  const user = await findUserByEmail(email);
 
   // Validate user existence and password.
   // In a real app, use bcrypt.compare(password, user.password).
@@ -39,7 +38,7 @@ export async function loginAction(_prevState: FormState, formData: FormData): Pr
 
   // Create a session for the authenticated user.
   await createSession({
-    id: user.id,
+    id: user._id.toString(),
     name: user.name,
     email: user.email,
     role: user.role,
@@ -87,9 +86,12 @@ export async function createEmployeeAction(_prevState: FormState, formData: Form
 
     const newEmployee = await createEmployee(validatedFields.data);
     revalidatePath('/dashboard'); // Refresh the employee list
-    return { success: true, data: newEmployee };
+    return { success: true, data: JSON.parse(JSON.stringify(newEmployee)) };
   } catch (e) {
     const error = e as Error;
+    if (error.message.includes('E11000')) {
+        return { error: 'An employee with this email already exists.' };
+    }
     return { error: error.message };
   }
 }
@@ -116,9 +118,12 @@ export async function updateEmployeeAction(_prevState: FormState, formData: Form
         
         const updatedEmployee = await updateEmployee(id, dataToUpdate);
         revalidatePath('/dashboard');
-        return { success: true, data: updatedEmployee };
+        return { success: true, data: JSON.parse(JSON.stringify(updatedEmployee)) };
     } catch(e) {
         const error = e as Error;
+        if (error.message.includes('E11000')) {
+            return { error: 'An employee with this email already exists.' };
+        }
         return { error: error.message };
     }
 }

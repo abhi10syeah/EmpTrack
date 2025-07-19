@@ -72,7 +72,7 @@ export function EmployeeForm({ isOpen, setOpen, employee, onFormSubmit }: Employ
         email: employee.email,
         position: employee.position,
         department: employee.department,
-        dateOfJoining: employee.dateOfJoining,
+        dateOfJoining: new Date(employee.dateOfJoining),
       });
     } else {
       form.reset({

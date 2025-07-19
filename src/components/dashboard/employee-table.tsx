@@ -102,7 +102,7 @@ export function EmployeeTable({
       setEmployees(employees.map(e => e.id === updatedEmployee.id ? updatedEmployee : e));
     } else {
       // Add new employee
-      setEmployees([...employees, updatedEmployee]);
+      setEmployees([updatedEmployee, ...employees].sort((a,b) => a.name.localeCompare(b.name)));
     }
   };
 
@@ -138,7 +138,7 @@ export function EmployeeTable({
                 </TableCell>
                 <TableCell>{employee.position}</TableCell>
                 <TableCell>{employee.department}</TableCell>
-                <TableCell>{format(employee.dateOfJoining, 'PPP')}</TableCell>
+                <TableCell>{format(new Date(employee.dateOfJoining), 'PPP')}</TableCell>
                 {userRole === 'admin' && (
                   <TableCell className="text-right">
                     <Button variant="ghost" size="icon" onClick={() => handleEdit(employee)}>
@@ -197,7 +197,7 @@ export function EmployeeTable({
                 </div>
                 <div className="flex items-center gap-2 text-muted-foreground">
                     <Calendar className="h-4 w-4" />
-                    <span>Joined {format(employee.dateOfJoining, 'PPP')}</span>
+                    <span>Joined {format(new Date(employee.dateOfJoining), 'PPP')}</span>
                 </div>
             </CardContent>
           </Card>

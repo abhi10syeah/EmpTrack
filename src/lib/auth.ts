@@ -4,8 +4,11 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 // This secret is used to sign and verify JWTs.
-// In a real application, this should be a long, complex string stored securely in environment variables.
-const secretKey = process.env.JWT_SECRET || 'a-very-secure-secret-key-that-is-at-least-32-bytes-long';
+// It is now loaded from environment variables.
+const secretKey = process.env.JWT_SECRET;
+if (!secretKey) {
+  throw new Error('JWT_SECRET environment variable is not set');
+}
 const key = new TextEncoder().encode(secretKey);
 
 // Define the shape of the user session payload.

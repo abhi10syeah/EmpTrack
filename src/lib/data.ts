@@ -1,7 +1,10 @@
-// This file simulates a database for employee records.
-// In a real application, this would be replaced with a database connection (e.g., MongoDB with Mongoose).
+import 'server-only';
+import dbConnect from './db';
+import Employee, { IEmployee } from '@/models/employee';
+import User, { IUser } from '@/models/user';
 
-export interface Employee {
+// The Employee type for the frontend, converting ObjectId to string.
+export type Employee = {
   id: string;
   name: string;
   email: string;
@@ -10,49 +13,53 @@ export interface Employee {
   dateOfJoining: Date;
 }
 
-// Initial mock data for employees.
-let employees: Employee[] = [
-  { id: '1', name: 'Alice Johnson', email: 'alice.j@example.com', position: 'Software Engineer', department: 'Technology', dateOfJoining: new Date('2022-08-15') },
-  { id: '2', name: 'Bob Williams', email: 'bob.w@example.com', position: 'Project Manager', department: 'Management', dateOfJoining: new Date('2021-03-20') },
-  { id: '3', name: 'Charlie Brown', email: 'charlie.b@example.com', position: 'UX Designer', department: 'Design', dateOfJoining: new Date('2023-01-10') },
-  { id: '4', name: 'Diana Miller', email: 'diana.m@example.com', position: 'HR Specialist', department: 'Human Resources', dateOfJoining: new Date('2020-11-05') },
-  { id: '5', name: 'Ethan Davis', email: 'ethan.d@example.com', position: 'Marketing Head', department: 'Marketing', dateOfJoining: new Date('2019-07-22') },
-  { id: '6', name: 'Fiona Garcia', email: 'fiona.g@example.com', position: 'DevOps Engineer', department: 'Technology', dateOfJoining: new Date('2023-05-30') },
-];
-
-// Simulates fetching all employees from the database.
-export const getEmployees = async (): Promise<Employee[]> => {
-  // Simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 500));
-  return employees.sort((a, b) => a.name.localeCompare(b.name));
+// --- User Data ---
+export const findUserByEmail = async (email: string) => {
+  await dbConnect();
+  const user = await User.findOne({ email });
+  return user;
 };
 
-// Simulates creating a new employee in the database.
-export const createEmployee = async (data: Omit<Employee, 'id'>): Promise<Employee> => {
-  await new Promise(resolve => setTimeout(resolve, 300));
-  const newEmployee: Employee = {
-    id: (Math.max(...employees.map(e => parseInt(e.id, 10))) + 1).toString(),
-    ...data,
+
+// --- Employee Data ---
+
+// A helper to serialize the employee document
+const serializeEmployee = (doc: IEmployee): Employee => {
+  return {
+    id: doc._id.toString(),
+    name: doc.name,
+    email: doc.email,
+    position: doc.position,
+    department: doc.department,
+    dateOfJoining: doc.dateOfJoining,
   };
-  employees.push(newEmployee);
+};
+
+// Fetches all employees from the database.
+export const getEmployees = async (): Promise<Employee[]> => {
+  await dbConnect();
+  const employees = await Employee.find({}).sort({ name: 1 });
+  return employees.map(serializeEmployee);
+};
+
+// Creates a new employee in the database.
+export const createEmployee = async (data: Omit<Employee, 'id'>): Promise<IEmployee> => {
+  await dbConnect();
+  const newEmployee = new Employee(data);
+  await newEmployee.save();
   return newEmployee;
 };
 
-// Simulates updating an existing employee in the database.
-export const updateEmployee = async (id: string, data: Partial<Omit<Employee, 'id'>>): Promise<Employee | null> => {
-  await new Promise(resolve => setTimeout(resolve, 300));
-  const index = employees.findIndex(e => e.id === id);
-  if (index !== -1) {
-    employees[index] = { ...employees[index], ...data };
-    return employees[index];
-  }
-  return null;
+// Updates an existing employee in the database.
+export const updateEmployee = async (id: string, data: Partial<Omit<Employee, 'id'>>): Promise<IEmployee | null> => {
+  await dbConnect();
+  const updatedEmployee = await Employee.findByIdAndUpdate(id, data, { new: true });
+  return updatedEmployee;
 };
 
-// Simulates deleting an employee from the database.
+// Deletes an employee from the database.
 export const deleteEmployee = async (id: string): Promise<{ success: boolean }> => {
-  await new Promise(resolve => setTimeout(resolve, 300));
-  const initialLength = employees.length;
-  employees = employees.filter(e => e.id !== id);
-  return { success: employees.length < initialLength };
+  await dbConnect();
+  const result = await Employee.deleteOne({ _id: id });
+  return { success: result.deletedCount > 0 };
 };
