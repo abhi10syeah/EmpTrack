@@ -1,7 +1,8 @@
 import { getSession } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { LoginForm } from '@/components/auth/login-form';
-import { Building2 } from 'lucide-react';
+import { Building2, Info } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default async function LoginPage() {
   // Check if the user is already logged in and redirect to dashboard if so.
@@ -23,6 +24,19 @@ export default async function LoginPage() {
           </p>
         </div>
         <LoginForm />
+
+        <Alert className="mt-8">
+          <Info className="h-4 w-4" />
+          <AlertTitle>Demo Credentials</AlertTitle>
+          <AlertDescription>
+            <p className="mt-2">
+              <strong>Admin:</strong> admin@example.com / password123
+            </p>
+            <p className="mt-1">
+              <strong>Viewer:</strong> viewer@example.com / password123
+            </p>
+          </AlertDescription>
+        </Alert>
       </div>
     </main>
   );
