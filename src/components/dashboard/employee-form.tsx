@@ -1,12 +1,11 @@
 'use client';
 
-import { useEffect, useActionState } from 'react';
+import { useEffect, useActionState, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { format } from 'date-fns';
 import { Calendar as CalendarIcon } from 'lucide-react';
-import { useFormStatus } from 'react-dom';
 
 import { employeeSchema } from '@/lib/schemas';
 import type { Employee } from '@/lib/data';
@@ -44,22 +43,15 @@ interface EmployeeFormProps {
   onFormSubmit: (employee: Employee) => void;
 }
 
-function SubmitButton({ isEditMode }: { isEditMode: boolean }) {
-    const { pending } = useFormStatus();
-    return (
-        <Button type="submit" disabled={pending}>
-            {pending ? 'Saving...' : isEditMode ? 'Save Changes' : 'Save Employee'}
-        </Button>
-    );
-}
-
-
 export function EmployeeForm({ isOpen, setOpen, employee, onFormSubmit }: EmployeeFormProps) {
   const { toast } = useToast();
+  const [isPending, startTransition] = useTransition();
   const isEditMode = !!employee;
 
   // Choose the appropriate server action based on whether we are editing or creating.
   const action = isEditMode ? updateEmployeeAction : createEmployeeAction;
+  
+  // useActionState handles the state returned from the server action.
   const [state, formAction] = useActionState(action, undefined);
 
   const form = useForm<EmployeeFormValues>({
@@ -115,6 +107,12 @@ export function EmployeeForm({ isOpen, setOpen, employee, onFormSubmit }: Employ
     }
   }, [state, isEditMode, setOpen, onFormSubmit, toast]);
   
+  const onSubmit = (formData: FormData) => {
+    startTransition(() => {
+      formAction(formData);
+    });
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={setOpen}>
       <DialogContent className="sm:max-w-[425px]">
@@ -125,7 +123,7 @@ export function EmployeeForm({ isOpen, setOpen, employee, onFormSubmit }: Employ
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form action={formAction}>
+          <form action={onSubmit}>
             <div className="space-y-4 py-4">
               {/* Hidden input for employee ID in edit mode */}
               {isEditMode && <input type="hidden" {...form.register('id')} />}
@@ -163,7 +161,9 @@ export function EmployeeForm({ isOpen, setOpen, employee, onFormSubmit }: Employ
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-              <SubmitButton isEditMode={isEditMode} />
+              <Button type="submit" disabled={isPending}>
+                 {isPending ? 'Saving...' : isEditMode ? 'Save Changes' : 'Save Employee'}
+              </Button>
             </DialogFooter>
           </form>
         </Form>
