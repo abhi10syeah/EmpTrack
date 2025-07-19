@@ -30,10 +30,10 @@ export default async function LoginPage() {
           <AlertTitle>Demo Credentials</AlertTitle>
           <AlertDescription>
             <p className="mt-2">
-              <strong>Admin:</strong> admin@example.com / password123
+              <strong>Admin:</strong> admin@example.com / ajax121
             </p>
             <p className="mt-1">
-              <strong>Viewer:</strong> viewer@example.com / password123
+              <strong>Viewer:</strong> viewer@example.com / ajax121
             </p>
           </AlertDescription>
         </Alert>
