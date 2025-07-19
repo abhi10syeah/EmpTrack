@@ -6,18 +6,19 @@ import { revalidatePath } from 'next/cache';
 import { createSession, deleteSession, getSession } from '@/lib/auth';
 import { loginSchema, employeeSchema } from '@/lib/schemas';
 import { createEmployee, updateEmployee, deleteEmployee as deleteEmployeeData, findUserByEmail } from '@/lib/data';
+import { Employee } from '@/lib/data';
 
 // Define the shape of the state returned by server actions.
 type FormState = {
-  success?: boolean;
-  error?: string;
-  data?: unknown;
-} | undefined;
+  success: boolean;
+  message: string;
+  data?: Employee;
+};
 
 // --- Authentication Actions ---
 
 // Server action to handle user login.
-export async function loginAction(_prevState: FormState, formData: FormData): Promise<FormState> {
+export async function loginAction(_prevState: { error?: string } | undefined, formData: FormData): Promise<{ error?: string } | undefined> {
   // Validate form data against the login schema.
   const validatedFields = loginSchema.safeParse(Object.fromEntries(formData.entries()));
 
@@ -67,81 +68,75 @@ async function adminOnly() {
 }
 
 // Server action to create a new employee record.
-export async function createEmployeeAction(_prevState: FormState, formData: FormData): Promise<FormState> {
+export async function createEmployeeAction(data: z.infer<typeof employeeSchema>): Promise<FormState> {
   try {
     await adminOnly();
     
-    // Convert FormData to a plain object.
-    const formObject = Object.fromEntries(formData.entries());
-    
-    // Manually create a Date object for dateOfJoining.
-    const validatedFields = employeeSchema.safeParse({
-        ...formObject,
-        dateOfJoining: new Date(formObject.dateOfJoining as string),
-    });
+    const validatedFields = employeeSchema.safeParse(data);
 
     if (!validatedFields.success) {
-        return { error: 'Invalid form data. Please check your inputs.' };
+        return { success: false, message: 'Invalid form data. Please check your inputs.' };
     }
 
     const newEmployee = await createEmployee(validatedFields.data);
     revalidatePath('/dashboard'); // Refresh the employee list
-    return { success: true, data: JSON.parse(JSON.stringify(newEmployee)) };
+    return { success: true, message: 'Employee created.', data: JSON.parse(JSON.stringify(newEmployee)) };
   } catch (e) {
     const error = e as Error;
     if (error.message.includes('E11000')) {
-        return { error: 'An employee with this email already exists.' };
+        return { success: false, message: 'An employee with this email already exists.' };
     }
-    return { error: error.message };
+    return { success: false, message: error.message };
   }
 }
 
 // Server action to update an existing employee record.
-export async function updateEmployeeAction(_prevState: FormState, formData: FormData): Promise<FormState> {
+export async function updateEmployeeAction(data: z.infer<typeof employeeSchema>): Promise<FormState> {
     try {
         await adminOnly();
 
-        const formObject = Object.fromEntries(formData.entries());
-         const validatedFields = employeeSchema.safeParse({
-            ...formObject,
-            dateOfJoining: new Date(formObject.dateOfJoining as string),
-        });
+        const validatedFields = employeeSchema.safeParse(data);
 
         if (!validatedFields.success) {
-            return { error: 'Invalid form data.' };
+            return { success: false, message: 'Invalid form data.' };
         }
         
         const { id, ...dataToUpdate } = validatedFields.data;
         if (!id) {
-            return { error: 'Employee ID is missing.' };
+            return { success: false, message: 'Employee ID is missing.' };
         }
         
         const updatedEmployee = await updateEmployee(id, dataToUpdate);
+
+        if (!updatedEmployee) {
+            return { success: false, message: 'Employee not found.' };
+        }
+
         revalidatePath('/dashboard');
-        return { success: true, data: JSON.parse(JSON.stringify(updatedEmployee)) };
+        return { success: true, message: 'Employee updated.', data: JSON.parse(JSON.stringify(updatedEmployee)) };
     } catch(e) {
         const error = e as Error;
         if (error.message.includes('E11000')) {
-            return { error: 'An employee with this email already exists.' };
+            return { success: false, message: 'An employee with this email already exists.' };
         }
-        return { error: error.message };
+        return { success: false, message: error.message };
     }
 }
 
 // Server action to delete an employee record.
-export async function deleteEmployeeAction(id: string): Promise<FormState> {
+export async function deleteEmployeeAction(id: string): Promise<{ success: boolean; message?: string }> {
     try {
         await adminOnly();
         const result = await deleteEmployeeData(id);
         
         if (!result.success) {
-            return { error: 'Failed to delete employee.' };
+            return { success: false, message: 'Failed to delete employee.' };
         }
         
         revalidatePath('/dashboard');
         return { success: true };
     } catch(e) {
         const error = e as Error;
-        return { error: error.message };
+        return { success: false, message: error.message };
     }
 }

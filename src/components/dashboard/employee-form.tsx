@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useActionState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -33,6 +33,8 @@ import {
 } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 
 type EmployeeFormValues = z.infer<typeof employeeSchema>;
 
@@ -46,13 +48,8 @@ interface EmployeeFormProps {
 export function EmployeeForm({ isOpen, setOpen, employee, onFormSubmit }: EmployeeFormProps) {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
   const isEditMode = !!employee;
-
-  // Choose the appropriate server action based on whether we are editing or creating.
-  const action = isEditMode ? updateEmployeeAction : createEmployeeAction;
-  
-  // useActionState handles the state returned from the server action.
-  const [state, formAction] = useActionState(action, undefined);
 
   const form = useForm<EmployeeFormValues>({
     resolver: zodResolver(employeeSchema),
@@ -66,52 +63,50 @@ export function EmployeeForm({ isOpen, setOpen, employee, onFormSubmit }: Employ
     },
   });
 
-  // Populate the form with employee data when in edit mode.
+  // Populate the form with employee data when in edit mode or reset it.
   useEffect(() => {
-    if (isEditMode && employee) {
-      form.reset({
-        id: employee.id,
-        name: employee.name,
-        email: employee.email,
-        position: employee.position,
-        department: employee.department,
-        dateOfJoining: new Date(employee.dateOfJoining),
-      });
-    } else {
-      form.reset({
-        id: undefined,
-        name: '',
-        email: '',
-        position: '',
-        department: '',
-        dateOfJoining: undefined,
-      });
+    if (isOpen) {
+      setError(null); // Clear previous errors when dialog opens
+      if (isEditMode && employee) {
+        form.reset({
+          id: employee.id,
+          name: employee.name,
+          email: employee.email,
+          position: employee.position,
+          department: employee.department,
+          dateOfJoining: new Date(employee.dateOfJoining),
+        });
+      } else {
+        form.reset({
+          id: undefined,
+          name: '',
+          email: '',
+          position: '',
+          department: '',
+          dateOfJoining: undefined,
+        });
+      }
     }
   }, [employee, isEditMode, form, isOpen]);
-
-  // Handle the response from the server action.
-  useEffect(() => {
-    if (state?.success && state.data) {
-      toast({
-        title: `Success: Employee ${isEditMode ? 'Updated' : 'Created'}`,
-        description: `The record for ${(state.data as Employee).name} has been saved.`,
-      });
-      onFormSubmit(state.data as Employee);
-      setOpen(false);
-    } else if (state?.error) {
-      toast({
-        variant: 'destructive',
-        title: 'An error occurred',
-        description: state.error,
-      });
-    }
-  }, [state, isEditMode, setOpen, onFormSubmit, toast]);
   
-  const onSubmit = (formData: FormData) => {
-    startTransition(() => {
-      formAction(formData);
+  const onSubmit = form.handleSubmit((data) => {
+    setError(null); // Clear previous errors on new submission
+    startTransition(async () => {
+      const action = isEditMode ? updateEmployeeAction : createEmployeeAction;
+      const result = await action(data);
+
+      if (result.success && result.data) {
+        toast({
+          title: `Success: Employee ${isEditMode ? 'Updated' : 'Created'}`,
+          description: `The record for ${result.data.name} has been saved.`,
+        });
+        onFormSubmit(result.data);
+        setOpen(false);
+      } else {
+        setError(result.message);
+      }
     });
-  };
+  });
 
   return (
     <Dialog open={isOpen} onOpenChange={setOpen}>
@@ -123,8 +118,16 @@ export function EmployeeForm({ isOpen, setOpen, employee, onFormSubmit }: Employ
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form action={onSubmit}>
+          <form onSubmit={onSubmit}>
             <div className="space-y-4 py-4">
+               {error && (
+                <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>An error occurred</AlertTitle>
+                    <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+
               {/* Hidden input for employee ID in edit mode */}
               {isEditMode && <input type="hidden" {...form.register('id')} />}
 

@@ -89,7 +89,7 @@ export function EmployeeTable({
       setEmployees(employees.filter(e => e.id !== employeeToDelete.id));
       toast({ title: "Success", description: "Employee record deleted." });
     } else {
-      toast({ variant: 'destructive', title: "Error", description: result.error });
+      toast({ variant: 'destructive', title: "Error", description: result.message });
     }
     setAlertOpen(false);
     setEmployeeToDelete(null);

@@ -37,8 +37,6 @@ function SubmitButton() {
 }
 
 export function LoginForm() {
-  const { toast } = useToast();
-  
   // `useActionState` handles the state returned from the server action.
   const [state, formAction] = useActionState(loginAction, undefined);
 
@@ -53,24 +51,20 @@ export function LoginForm() {
   // Display a toast notification if the server action returns an error.
   useEffect(() => {
     if (state?.error) {
-      toast({
-        variant: 'destructive',
-        title: 'Login Failed',
-        description: state.error,
-      });
+       form.setError("root.serverError", { type: "custom", message: state.error });
     }
-  }, [state, toast]);
+  }, [state, form]);
 
   return (
     <Form {...form}>
       <form action={formAction}>
         <Card>
           <CardContent className="space-y-4 pt-6">
-            {state?.error && !state.success && (
+            {form.formState.errors.root?.serverError && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>Error</AlertTitle>
-                <AlertDescription>{state.error}</AlertDescription>
+                <AlertDescription>{form.formState.errors.root.serverError.message}</AlertDescription>
               </Alert>
             )}
             <FormField
