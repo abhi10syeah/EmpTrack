@@ -1,10 +1,9 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useActionState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useFormState } from 'react-dom';
 import { format } from 'date-fns';
 import { Calendar as CalendarIcon } from 'lucide-react';
 
@@ -50,7 +49,7 @@ export function EmployeeForm({ isOpen, setOpen, employee, onFormSubmit }: Employ
 
   // Choose the appropriate server action based on whether we are editing or creating.
   const action = isEditMode ? updateEmployeeAction : createEmployeeAction;
-  const [state, formAction] = useFormState(action, undefined);
+  const [state, formAction] = useActionState(action, undefined);
 
   const form = useForm<EmployeeFormValues>({
     resolver: zodResolver(employeeSchema),
@@ -76,7 +75,14 @@ export function EmployeeForm({ isOpen, setOpen, employee, onFormSubmit }: Employ
         dateOfJoining: employee.dateOfJoining,
       });
     } else {
-      form.reset();
+      form.reset({
+        id: undefined,
+        name: '',
+        email: '',
+        position: '',
+        department: '',
+        dateOfJoining: undefined,
+      });
     }
   }, [employee, isEditMode, form, isOpen]);
 
@@ -85,7 +91,7 @@ export function EmployeeForm({ isOpen, setOpen, employee, onFormSubmit }: Employ
     if (state?.success && state.data) {
       toast({
         title: `Success: Employee ${isEditMode ? 'Updated' : 'Created'}`,
-        description: `The record for ${state.data.name} has been saved.`,
+        description: `The record for ${(state.data as Employee).name} has been saved.`,
       });
       onFormSubmit(state.data as Employee);
       setOpen(false);

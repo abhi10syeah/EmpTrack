@@ -4,8 +4,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { loginAction } from '@/app/actions';
-import { useFormState, useFormStatus } from 'react-dom';
-import { useEffect } from 'react';
+import { useFormStatus } from 'react-dom';
+import { useEffect, useActionState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,8 +39,8 @@ function SubmitButton() {
 export function LoginForm() {
   const { toast } = useToast();
   
-  // `useFormState` handles the state returned from the server action.
-  const [state, formAction] = useFormState(loginAction, undefined);
+  // `useActionState` handles the state returned from the server action.
+  const [state, formAction] = useActionState(loginAction, undefined);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
