@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { format } from 'date-fns';
 import { Calendar as CalendarIcon } from 'lucide-react';
+import { useFormStatus } from 'react-dom';
 
 import { employeeSchema } from '@/lib/schemas';
 import type { Employee } from '@/lib/data';
@@ -42,6 +43,16 @@ interface EmployeeFormProps {
   employee?: Employee;
   onFormSubmit: (employee: Employee) => void;
 }
+
+function SubmitButton({ isEditMode }: { isEditMode: boolean }) {
+    const { pending } = useFormStatus();
+    return (
+        <Button type="submit" disabled={pending}>
+            {pending ? 'Saving...' : isEditMode ? 'Save Changes' : 'Save Employee'}
+        </Button>
+    );
+}
+
 
 export function EmployeeForm({ isOpen, setOpen, employee, onFormSubmit }: EmployeeFormProps) {
   const { toast } = useToast();
@@ -152,9 +163,7 @@ export function EmployeeForm({ isOpen, setOpen, employee, onFormSubmit }: Employ
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-              <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? 'Saving...' : 'Save Employee'}
-              </Button>
+              <SubmitButton isEditMode={isEditMode} />
             </DialogFooter>
           </form>
         </Form>
